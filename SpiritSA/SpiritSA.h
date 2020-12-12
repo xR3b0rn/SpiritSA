@@ -472,7 +472,8 @@ class rule_unary_star
   : public rule_base<rule_unary_star<Iter, R, T2>>
 {
 public:
-  using fold_t = std::vector<std::remove_reference_t<typename R::fold_t>>&;
+  using R_t = std::remove_reference_t<R>;
+  using fold_t = std::vector<std::remove_reference_t<typename R_t::fold_t>>&;
   static constexpr std::size_t N = 1;
 
   constexpr rule_unary_star(R r)
@@ -481,7 +482,7 @@ public:
   template <class Res>
   constexpr bool parse(Iter& begin, Iter end, Res& res) const
   {
-    std::remove_reference_t<typename R::fold_t> t;
+    std::remove_reference_t<typename R_t::fold_t> t;
     while (_r.parse(begin, end, t))
     {
       res.push_back(t);
@@ -627,13 +628,13 @@ rule_number<const char*, double> double_;
 
 template <class Iter, class T1 = void, class T2 = void>
 class rule_lit
-  : public rule_base<rule_str<Iter, T1, T2>>
+  : public rule_base<rule_lit<Iter, T1, T2>>
 {
 public:
   using fold_t = void;
   static constexpr std::size_t N = 0;
   
-  constexpr rule_str(const std::string& str)
+  constexpr rule_lit(const std::string& str)
     : _str(str)
   {}
   constexpr bool parse(Iter& begin, Iter end) const
