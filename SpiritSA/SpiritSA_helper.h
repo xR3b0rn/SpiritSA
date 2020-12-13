@@ -290,3 +290,39 @@ struct structure_tie<std::variant<Args...>>
     return t;
   }
 };
+
+template <class T>
+struct remove_rreference
+{
+  using type = T;
+};
+template <class T>
+struct remove_rreference<T&&>
+{
+  using type = T;
+};
+template <class T>
+using remove_rreference_t = typename remove_rreference<T>::type;
+
+template <class T>
+struct remove_reference_from_tuple_types;
+template <class... Args>
+struct remove_reference_from_tuple_types<std::tuple<Args...>>
+{
+  using type = std::tuple<std::remove_reference_t<Args>...>;
+};
+template <class T>
+using remove_reference_from_tuple_types_t = typename remove_reference_from_tuple_types<T>::type;
+
+
+template <class... Args, std::size_t... I>
+auto tuple_with_types_to_tuple_with_types_of_references_helper(std::tuple<Args...>& t, std::index_sequence<I...>)
+{
+  return std::tuple<Args&...>(std::get<I>(t)...);
+}
+
+template <class... Args>
+auto tuple_with_types_to_tuple_with_types_of_references(std::tuple<Args...>& t)
+{
+  return tuple_with_types_to_tuple_with_types_of_references_helper(t, std::make_index_sequence<sizeof...(Args)>());
+}

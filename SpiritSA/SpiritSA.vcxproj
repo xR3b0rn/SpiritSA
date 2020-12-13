@@ -148,6 +148,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="SpiritSA.h" />
+    <ClInclude Include="SpiritSA_helper.h" />
+    <ClInclude Include="SpiritSA_operators.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

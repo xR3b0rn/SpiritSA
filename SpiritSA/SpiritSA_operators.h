@@ -1,194 +1,54 @@
+
 #pragma once
 
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_expect<Iter, LhsC<Iter, LhsArgs...>&, RhsC<Iter, RhsArgs...>&>(lhs.child(), rhs.child());
-}
 
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_expect<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_expect<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>&>(std::move(lhs.child()), rhs.child());
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_expect<Iter, LhsC<Iter, LhsArgs...>&, RhsC<Iter, RhsArgs...>>(lhs.child(), std::move(rhs.child()));
-}
+#define DEFINE_UNARY_OPERATOR(OP, CL)           \
+  template <class R>                            \
+    requires                                    \
+      std::is_convertible_v<                    \
+          std::decay_t<R>&                      \
+         , rule_base<void>&>                    \
+  constexpr auto operator OP (R&& r)            \
+  {                                             \
+    using iter_t =                              \
+        typename std::decay_t<R>::iter_t;       \
+    return CL <                                 \
+        iter_t                                  \
+      , remove_rreference_t<R>>(                \
+          std::forward<R>(r));                  \
+  }
 
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator|(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_or<Iter, LhsC<Iter, LhsArgs...>&, RhsC<Iter, RhsArgs...>&>(lhs.child(), rhs.child());
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator|(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_or<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator|(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_or<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(lhs.child(), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator|(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_or<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), rhs.child());
-}
+#define DEFINE_BINARY_OPERATOR(OP, CL)          \
+  template <class Lhs, class Rhs>               \
+    requires                                    \
+      std::is_convertible_v<                    \
+          std::decay_t<Lhs>&                    \
+         , rule_base<void>&> &&                 \
+      std::is_convertible_v<                    \
+          std::decay_t<Rhs>&                    \
+         , rule_base<void>&>                    \
+  auto operator OP (Lhs&& lhs, Rhs&& rhs)       \
+  {                                             \
+    static_assert(                              \
+        std::is_same_v<                         \
+            std::decay_t<Lhs>::iter_t           \
+          , std::decay_t<Rhs>::iter_t>);        \
+    using iter_t =                              \
+        typename std::decay_t<Lhs>::iter_t;     \
+    return CL <                                 \
+        iter_t                                  \
+      , remove_rreference_t<Lhs>                \
+      , remove_rreference_t<Rhs>>(              \
+          std::forward<Lhs>(lhs)                \
+        , std::forward<Rhs>(rhs));              \
+  }
 
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator-(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_minus<Iter, LhsC<Iter, LhsArgs...>&, RhsC<Iter, RhsArgs...>&>(lhs.child(), rhs.child());
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator-(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_minus<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator-(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_minus<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(lhs.child(), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator-(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_minus<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), rhs.child());
-}
+DEFINE_UNARY_OPERATOR(!, rule_unary_not);
+DEFINE_UNARY_OPERATOR(-, rule_unary_minus);
+DEFINE_UNARY_OPERATOR(+, rule_unary_plus);
+DEFINE_UNARY_OPERATOR(*, rule_unary_star);
 
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>>(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_right_shift<Iter, LhsC<Iter, LhsArgs...>&, RhsC<Iter, RhsArgs...>&>(lhs.child(), rhs.child());
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>>(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_right_shift<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>>(rule_base<LhsC<Iter, LhsArgs...>>& lhs, rule_base<RhsC<Iter, RhsArgs...>>&& rhs)
-{
-  return rule_binary_right_shift<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(lhs.child(), std::move(rhs.child()));
-}
-template <
-    class Iter
-  , template <class...> class LhsC, class... LhsArgs
-  , template <class...> class RhsC, class... RhsArgs>
-constexpr auto operator>>(rule_base<LhsC<Iter, LhsArgs...>>&& lhs, rule_base<RhsC<Iter, RhsArgs...>>& rhs)
-{
-  return rule_binary_right_shift<Iter, LhsC<Iter, LhsArgs...>, RhsC<Iter, RhsArgs...>>(std::move(lhs.child()), rhs.child());
-}
-
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator-(rule_base<R<Iter, RArgs...>>& r)
-{
-  return rule_unary_minus<Iter, R<Iter, RArgs...>&>(r.child());
-}
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator-(rule_base<R<Iter, RArgs...>>&& r)
-{
-  return rule_unary_minus<Iter, R<Iter, RArgs...>&>(std::move(r.child()));
-}
-  
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator*(rule_base<R<Iter, RArgs...>>& r)
-{
-  return rule_unary_star<Iter, R<Iter, RArgs...>&>(r.child());
-}
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator*(rule_base<R<Iter, RArgs...>>&& r)
-{
-  return rule_unary_star<Iter, R<Iter, RArgs...>>(std::move(r.child()));
-}
-
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator+(rule_base<R<Iter, RArgs...>>& r)
-{
-  return rule_unary_plus<Iter, R<Iter, RArgs...>&>(r.child());
-}
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator+(rule_base<R<Iter, RArgs...>>&& r)
-{
-  return rule_unary_plus<Iter, R<Iter, RArgs...>>(std::move(r.child()));
-}
-
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator!(rule_base<R<Iter, RArgs...>>& r)
-{
-  return rule_unary_not<Iter, R<Iter, RArgs...>&>(r.child());
-}
-template <
-    class Iter
-  , template <class...> class R, class... RArgs>
-constexpr auto operator!(rule_base<R<Iter, RArgs...>>&& r)
-{
-  return rule_unary_not<Iter, R<Iter, RArgs...>>(std::move(r.child()));
-}
+DEFINE_BINARY_OPERATOR(>>, rule_binary_right_shift);
+DEFINE_BINARY_OPERATOR(>, rule_binary_expect);
+DEFINE_BINARY_OPERATOR(|, rule_binary_or);
+DEFINE_BINARY_OPERATOR(-, rule_binary_minus);
